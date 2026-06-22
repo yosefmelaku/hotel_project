@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import './App.css'
+import AdminLogin from './AdminLogin'
+import AdminDashboard from './AdminDashboard'
 
 function App() {
   const [rooms, setRooms] = useState([])
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [page, setPage] = useState('rooms') // 'rooms' | 'prices' | 'booking'
+  const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken') || '')
   const [loading, setLoading] = useState(false)
 
   const [form, setForm] = useState({
@@ -74,19 +77,18 @@ function App() {
 
   return (
     <div className="app-container">
-      <header>
-        <h1>Hotel Management Dashboard</h1>
-        <nav style={{ marginTop: 8 }}>
-          <button onClick={() => navigate('rooms')} style={{ marginRight: 8 }}>Rooms</button>
-          <button onClick={() => navigate('prices')} style={{ marginRight: 8 }}>Prices</button>
-          <button onClick={() => navigate('booking')}>New Booking</button>
-        </nav>
-      </header>
-      <div className="hero-row" style={{ marginTop: 12 }}>
-        <div className="hero-card">
-          <img src="/assets/hotel.jpg" alt="Hotel exterior" className="hero-image" />
-          <h3>Our Hotel</h3>
+      <div className="hero-banner" role="img" aria-label="Hotel exterior">
+        <div className="hero-overlay">
+          <h1>Hotel Management Dashboard</h1>
+          <nav className="main-nav">
+            <button className={`nav-button ${page === 'rooms' ? 'active' : ''}`} onClick={() => navigate('rooms')}>Rooms</button>
+            <button className={`nav-button ${page === 'prices' ? 'active' : ''}`} onClick={() => navigate('prices')}>Prices</button>
+            <button className={`nav-button ${page === 'booking' ? 'active' : ''}`} onClick={() => navigate('booking')}>New Booking</button>
+            <button className={`nav-button ${page === 'admin' ? 'active admin-btn' : 'admin-btn'}`} onClick={() => navigate('admin')}>Admin</button>
+          </nav>
         </div>
+      </div>
+      <div className="hero-row" style={{ marginTop: 12 }}>
         <div className="hero-card">
           <img src="/assets/restaurant.jpg" alt="Restaurant" className="hero-image" />
           <h3>Restaurant</h3>
@@ -94,6 +96,16 @@ function App() {
       </div>
 
       <main>
+        {page === 'admin' && (
+          <section className="admin">
+            {!adminToken ? (
+              <AdminLogin onLogin={(t) => { setAdminToken(t); localStorage.setItem('adminToken', t); }} />
+            ) : (
+              <AdminDashboard token={adminToken} onLogout={() => { setAdminToken(''); localStorage.removeItem('adminToken'); }} />
+            )}
+          </section>
+        )}
+
         {page === 'rooms' && (
           <section className="rooms">
             <h2>Rooms</h2>

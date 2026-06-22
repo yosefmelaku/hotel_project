@@ -17,7 +17,7 @@ async function main() {
   try {
     await client.connect()
     const res = await client.query(`SELECT 1 FROM pg_database WHERE datname='${dbName}'`)
-    if (res.rowCount > 0) {
+    if ((res.rowCount ?? 0) > 0) {
       console.log(`Database '${dbName}' already exists`)
     } else {
       await client.query(`CREATE DATABASE ${dbName}`)
