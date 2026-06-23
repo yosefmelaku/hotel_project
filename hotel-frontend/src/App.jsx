@@ -6,8 +6,10 @@ import AdminDashboard from './AdminDashboard'
 
 function App() {
   const [rooms, setRooms] = useState([])
+  const [foodTypes, setFoodTypes] = useState([])
+  const [services, setServices] = useState([])
   const [selectedRoom, setSelectedRoom] = useState(null)
-  const [page, setPage] = useState('rooms') // 'rooms' | 'prices' | 'booking'
+  const [page, setPage] = useState('rooms')
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken') || '')
   const [loading, setLoading] = useState(false)
 
@@ -22,23 +24,47 @@ function App() {
   })
 
   const fetchRooms = async () => {
-    setLoading(true)
     try {
       const res = await axios.get('http://localhost:5000/api/rooms')
-      // some environments (PowerShell tests) may wrap the array in { value: [...] }
       const data = Array.isArray(res.data) ? res.data : (res.data && res.data.value) || []
       setRooms(data)
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  const fetchFoodTypes = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/food-types')
+      const data = Array.isArray(res.data) ? res.data : (res.data && res.data.value) || []
+      setFoodTypes(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const fetchServices = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/services')
+      const data = Array.isArray(res.data) ? res.data : (res.data && res.data.value) || []
+      setServices(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const fetchCatalog = async () => {
+    setLoading(true)
+    try {
+      await Promise.all([fetchRooms(), fetchFoodTypes(), fetchServices()])
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    // calling fetchRooms here intentionally to load initial data
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchRooms()
+    fetchCatalog()
   }, [])
 
   const navigate = (to, room = null) => {
@@ -75,25 +101,51 @@ function App() {
 
   const availableRooms = rooms.filter(r => String(r.status).toLowerCase() === 'available')
 
+  const groupByCategory = (items) => {
+    return items.reduce((groups, item) => {
+      const cat = item.category || 'Other'
+      if (!groups[cat]) groups[cat] = []
+      groups[cat].push(item)
+      return groups
+    }, {})
+  }
+
+  const foodByCategory = groupByCategory(foodTypes)
+  const servicesByCategory = groupByCategory(services)
+
   return (
     <div className="app-container">
-      <div className="hero-banner" role="img" aria-label="Hotel exterior">
+      <header className="hero-banner" role="img" aria-label="Hotel exterior">
         <div className="hero-overlay">
-          <h1>Hotel Management Dashboard</h1>
+          <h1>Grand Horizon Hotel</h1>
+          <p className="hero-tagline">Elegant rooms, fine dining, and seamless reservations — all in one place.</p>
           <nav className="main-nav">
             <button className={`nav-button ${page === 'rooms' ? 'active' : ''}`} onClick={() => navigate('rooms')}>Rooms</button>
+            <button className={`nav-button ${page === 'dining' ? 'active' : ''}`} onClick={() => navigate('dining')}>Dining</button>
+            <button className={`nav-button ${page === 'services' ? 'active' : ''}`} onClick={() => navigate('services')}>Services</button>
             <button className={`nav-button ${page === 'prices' ? 'active' : ''}`} onClick={() => navigate('prices')}>Prices</button>
             <button className={`nav-button ${page === 'booking' ? 'active' : ''}`} onClick={() => navigate('booking')}>New Booking</button>
             <button className={`nav-button ${page === 'admin' ? 'active admin-btn' : 'admin-btn'}`} onClick={() => navigate('admin')}>Admin</button>
           </nav>
         </div>
-      </div>
-      <div className="hero-row" style={{ marginTop: 12 }}>
-        <div className="hero-card">
-          <img src="/assets/restaurant.jpg" alt="Restaurant" className="hero-image" />
-          <h3>Restaurant</h3>
-        </div>
-      </div>
+      </header>
+
+      <section className="hero-row" aria-label="Hotel amenities">
+        <article className="hero-card">
+          <img src="/assets/hotel.jpg" alt="Luxury hotel lobby" className="hero-image" />
+          <div className="hero-card-body">
+            <h3>Luxury Rooms</h3>
+            <p>Comfortable suites with premium amenities and city views.</p>
+          </div>
+        </article>
+        <article className="hero-card">
+          <img src="/assets/restaurant.jpg" alt="Fine dining restaurant" className="hero-image" />
+          <div className="hero-card-body">
+            <h3>Fine Dining</h3>
+            <p>Seasonal cuisine and an award-winning wine selection.</p>
+          </div>
+        </article>
+      </section>
 
       <main>
         {page === 'admin' && (
@@ -124,7 +176,7 @@ function App() {
                 </thead>
                 <tbody>
                   {rooms.map((r) => (
-                    <tr key={r.id} style={{ background: selectedRoom && selectedRoom.id === r.id ? '#f0f8ff' : 'transparent' }}>
+                    <tr key={r.id} style={{ background: selectedRoom && selectedRoom.id === r.id ? 'var(--accent-bg)' : 'transparent' }}>
                       <td>{r.room_number}</td>
                       <td>{r.room_type}</td>
                       <td>${Number(r.price_per_night).toFixed(2)}</td>
@@ -157,6 +209,66 @@ function App() {
                   <li key={r.id}>{r.room_number} — {r.room_type} — ${Number(r.price_per_night).toFixed(2)} {r.status !== 'Available' ? '(Unavailable)' : ''}</li>
                 ))}
               </ul>
+            )}
+          </section>
+        )}
+
+        {page === 'dining' && (
+          <section className="dining">
+            <h2>Restaurant Menu</h2>
+            <p className="section-intro">Explore our fine dining options, from breakfast to dessert.</p>
+            {loading ? <p>Loading...</p> : (
+              Object.keys(foodByCategory).length === 0 ? (
+                <p>No menu items available.</p>
+              ) : (
+                Object.entries(foodByCategory).map(([category, items]) => (
+                  <div key={category} className="catalog-group">
+                    <h3 className="catalog-category">{category}</h3>
+                    <div className="catalog-grid">
+                      {items.map((item) => (
+                        <article key={item.id} className="catalog-card">
+                          <div className="catalog-card-header">
+                            <h4>{item.name}</h4>
+                            <span className="catalog-price">${Number(item.price).toFixed(2)}</span>
+                          </div>
+                          {item.description && <p>{item.description}</p>}
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )
+            )}
+          </section>
+        )}
+
+        {page === 'services' && (
+          <section className="services">
+            <h2>Hotel Services</h2>
+            <p className="section-intro">Amenities and guest services available during your stay.</p>
+            {loading ? <p>Loading...</p> : (
+              Object.keys(servicesByCategory).length === 0 ? (
+                <p>No services available.</p>
+              ) : (
+                Object.entries(servicesByCategory).map(([category, items]) => (
+                  <div key={category} className="catalog-group">
+                    <h3 className="catalog-category">{category}</h3>
+                    <div className="catalog-grid">
+                      {items.map((item) => (
+                        <article key={item.id} className="catalog-card">
+                          <div className="catalog-card-header">
+                            <h4>{item.name}</h4>
+                            <span className="catalog-price">
+                              {Number(item.price) === 0 ? 'Complimentary' : `$${Number(item.price).toFixed(2)}`}
+                            </span>
+                          </div>
+                          {item.description && <p>{item.description}</p>}
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )
             )}
           </section>
         )}

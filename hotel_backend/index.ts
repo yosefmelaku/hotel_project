@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import pool from './db';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -31,6 +31,30 @@ app.get('/api/rooms', async (req: Request, res: Response) => {
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Failed to fetch rooms' });
+	}
+});
+
+app.get('/api/food-types', async (req: Request, res: Response) => {
+	try {
+		const result = await pool.query(
+			'SELECT * FROM food_types WHERE available = true ORDER BY category, name'
+		);
+		res.json(result.rows);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to fetch food types' });
+	}
+});
+
+app.get('/api/services', async (req: Request, res: Response) => {
+	try {
+		const result = await pool.query(
+			'SELECT * FROM hotel_services WHERE available = true ORDER BY category, name'
+		);
+		res.json(result.rows);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to fetch services' });
 	}
 });
 
@@ -158,5 +182,105 @@ app.put('/api/admin/rooms/:id', checkAdmin, async (req: Request, res: Response) 
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Failed to update room' });
+	}
+});
+
+// Admin: food types
+app.get('/api/admin/food-types', checkAdmin, async (req: Request, res: Response) => {
+	try {
+		const result = await pool.query('SELECT * FROM food_types ORDER BY category, name');
+		res.json(result.rows);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to fetch food types' });
+	}
+});
+
+app.post('/api/admin/food-types', checkAdmin, async (req: Request, res: Response) => {
+	const { name, category, description, price, available } = req.body;
+	if (!name || !category || price === undefined) {
+		return res.status(400).json({ error: 'name, category, and price are required' });
+	}
+	try {
+		const result = await pool.query(
+			'INSERT INTO food_types (name, category, description, price, available) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+			[name, category, description || null, price, available !== false]
+		);
+		res.status(201).json(result.rows[0]);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to create food type' });
+	}
+});
+
+app.put('/api/admin/food-types/:id', checkAdmin, async (req: Request, res: Response) => {
+	const { id } = req.params;
+	const { name, category, description, price, available } = req.body;
+	try {
+		const result = await pool.query(
+			`UPDATE food_types SET
+				name = COALESCE($1, name),
+				category = COALESCE($2, category),
+				description = COALESCE($3, description),
+				price = COALESCE($4, price),
+				available = COALESCE($5, available)
+			WHERE id = $6 RETURNING *`,
+			[name, category, description, price, available, id]
+		);
+		if (result.rowCount === 0) return res.status(404).json({ error: 'Food type not found' });
+		res.json(result.rows[0]);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to update food type' });
+	}
+});
+
+// Admin: hotel services
+app.get('/api/admin/services', checkAdmin, async (req: Request, res: Response) => {
+	try {
+		const result = await pool.query('SELECT * FROM hotel_services ORDER BY category, name');
+		res.json(result.rows);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to fetch services' });
+	}
+});
+
+app.post('/api/admin/services', checkAdmin, async (req: Request, res: Response) => {
+	const { name, category, description, price, available } = req.body;
+	if (!name || !category) {
+		return res.status(400).json({ error: 'name and category are required' });
+	}
+	try {
+		const result = await pool.query(
+			'INSERT INTO hotel_services (name, category, description, price, available) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+			[name, category, description || null, price ?? 0, available !== false]
+		);
+		res.status(201).json(result.rows[0]);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to create service' });
+	}
+});
+
+app.put('/api/admin/services/:id', checkAdmin, async (req: Request, res: Response) => {
+	const { id } = req.params;
+	const { name, category, description, price, available } = req.body;
+	try {
+		const result = await pool.query(
+			`UPDATE hotel_services SET
+				name = COALESCE($1, name),
+				category = COALESCE($2, category),
+				description = COALESCE($3, description),
+				price = COALESCE($4, price),
+				available = COALESCE($5, available)
+			WHERE id = $6 RETURNING *`,
+			[name, category, description, price, available, id]
+		);
+		if (result.rowCount === 0) return res.status(404).json({ error: 'Service not found' });
+		res.json(result.rows[0]);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to update service' });
 	}
 });
