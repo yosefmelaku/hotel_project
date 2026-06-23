@@ -69,7 +69,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --accent: #d4a84b;
     --accent-hover: #e8be6a;
     --accent-light: #f0d49a;
@@ -115,30 +115,85 @@
   }
 }
 
+[data-theme="dark"] {
+  --accent: #d4a84b;
+  --accent-hover: #e8be6a;
+  --accent-light: #f0d49a;
+  --accent-bg: rgba(212, 168, 75, 0.14);
+  --accent-border: rgba(212, 168, 75, 0.32);
+  --accent-glow: rgba(212, 168, 75, 0.22);
+
+  --burgundy: #8b3d52;
+  --burgundy-dark: #5c2838;
+
+  --bg: #1a1612;
+  --bg-gradient: linear-gradient(
+    165deg,
+    #221c17 0%,
+    #1a1612 50%,
+    #12100d 100%
+  );
+  --text: #c9bfb0;
+  --text-h: #f5efe6;
+  --border: rgba(212, 168, 75, 0.1);
+  --code-bg: rgba(212, 168, 75, 0.08);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45),
+            0 4px 12px rgba(0, 0, 0, 0.25);
+
+  --card-bg: rgba(34, 28, 22, 0.85);
+  --card-border: rgba(212, 168, 75, 0.12);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.35),
+                 0 2px 8px rgba(212, 168, 75, 0.04);
+
+  --status-available-bg: rgba(52, 180, 120, 0.14);
+  --status-available-text: #4ade80;
+  --status-available-border: rgba(52, 180, 120, 0.25);
+
+  --status-occupied-bg: rgba(220, 80, 70, 0.14);
+  --status-occupied-text: #f87171;
+  --status-occupied-border: rgba(220, 80, 70, 0.25);
+
+  --status-maintenance-bg: rgba(212, 168, 75, 0.14);
+  --status-maintenance-text: #d4a84b;
+  --status-maintenance-border: rgba(212, 168, 75, 0.28);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
 /* ═══════════════════════════════════════════════════════════
    BASE LAYOUT — scrollable page
    ═══════════════════════════════════════════════════════════ */
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  height: 100%;
 }
 
-html,
 body {
   margin: 0;
   padding: 0;
   min-height: 100%;
+  height: auto;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   background: var(--bg-gradient);
   background-color: var(--bg);
+  background-attachment: scroll;
 }
 
 #root {
   width: 1200px;
   max-width: 100%;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100%;
+  height: auto;
+  overflow: visible;
   box-sizing: border-box;
 }
 

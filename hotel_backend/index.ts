@@ -84,10 +84,14 @@ app.post('/api/bookings', async (req: Request, res: Response) => {
 		const guestId = guestInsert.rows[0].id;
 
 		// Get room price to compute total
-		const roomRes = await client.query('SELECT price_per_night FROM rooms WHERE id = $1 FOR UPDATE', [room_id]);
+		const roomRes = await client.query('SELECT price_per_night, status FROM rooms WHERE id = $1 FOR UPDATE', [room_id]);
 		if (roomRes.rowCount === 0) {
 			await client.query('ROLLBACK');
 			return res.status(404).json({ error: 'Room not found' });
+		}
+		if (String(roomRes.rows[0].status).toLowerCase() !== 'available') {
+			await client.query('ROLLBACK');
+			return res.status(400).json({ error: 'Room is not available' });
 		}
 		const pricePerNight = Number(roomRes.rows[0].price_per_night) || 0;
 
@@ -114,6 +118,51 @@ app.post('/api/bookings', async (req: Request, res: Response) => {
 		res.status(500).json({ error: 'Failed to create booking' });
 	} finally {
 		client.release();
+	}
+});
+
+app.post('/api/food-orders', async (req: Request, res: Response) => {
+	const { guest_name, room_number, items } = req.body;
+	if (!guest_name || !Array.isArray(items) || items.length === 0) {
+		return res.status(400).json({ error: 'guest_name and items are required' });
+	}
+	try {
+		const total = items.reduce(
+			(sum: number, item: { price: number; quantity: number }) =>
+				sum + Number(item.price) * Number(item.quantity),
+			0
+		);
+		const result = await pool.query(
+			`INSERT INTO food_orders (guest_name, room_number, items, total_price, status)
+			 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			[guest_name, room_number || null, JSON.stringify(items), Number(total.toFixed(2)), 'Pending']
+		);
+		res.status(201).json({ success: true, orderId: result.rows[0].id, total: Number(total.toFixed(2)) });
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to place food order' });
+	}
+});
+
+app.post('/api/service-requests', async (req: Request, res: Response) => {
+	const { guest_name, room_number, services } = req.body;
+	if (!guest_name || !Array.isArray(services) || services.length === 0) {
+		return res.status(400).json({ error: 'guest_name and services are required' });
+	}
+	try {
+		const total = services.reduce(
+			(sum: number, item: { price: number }) => sum + Number(item.price || 0),
+			0
+		);
+		const result = await pool.query(
+			`INSERT INTO service_requests (guest_name, room_number, services, total_price, status)
+			 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			[guest_name, room_number || null, JSON.stringify(services), Number(total.toFixed(2)), 'Pending']
+		);
+		res.status(201).json({ success: true, requestId: result.rows[0].id, total: Number(total.toFixed(2)) });
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to submit service request' });
 	}
 });
 
@@ -282,5 +331,25 @@ app.put('/api/admin/services/:id', checkAdmin, async (req: Request, res: Respons
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Failed to update service' });
+	}
+});
+
+app.get('/api/admin/food-orders', checkAdmin, async (req: Request, res: Response) => {
+	try {
+		const result = await pool.query('SELECT * FROM food_orders ORDER BY created_at DESC');
+		res.json(result.rows);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to fetch food orders' });
+	}
+});
+
+app.get('/api/admin/service-requests', checkAdmin, async (req: Request, res: Response) => {
+	try {
+		const result = await pool.query('SELECT * FROM service_requests ORDER BY created_at DESC');
+		res.json(result.rows);
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ error: 'Failed to fetch service requests' });
 	}
 });

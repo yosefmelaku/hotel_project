@@ -69,6 +69,30 @@ async function main() {
       )
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS food_orders (
+        id SERIAL PRIMARY KEY,
+        guest_name VARCHAR(200) NOT NULL,
+        room_number VARCHAR(50),
+        items JSONB NOT NULL,
+        total_price NUMERIC(10,2) NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS service_requests (
+        id SERIAL PRIMARY KEY,
+        guest_name VARCHAR(200) NOT NULL,
+        room_number VARCHAR(50),
+        services JSONB NOT NULL,
+        total_price NUMERIC(10,2) NOT NULL DEFAULT 0,
+        status VARCHAR(50) NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `)
+
     const res = await client.query('SELECT COUNT(*)::int AS cnt FROM rooms')
     const count = res.rows[0].cnt
     if (count === 0) {

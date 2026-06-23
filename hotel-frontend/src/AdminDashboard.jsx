@@ -112,6 +112,7 @@ export default function AdminDashboard({ token, onLogout }) {
         <div>
           <section>
             <h3>Bookings</h3>
+            <div className="table-wrap">
             <table>
               <thead>
                 <tr><th>ID</th><th>Guest</th><th>Room</th><th>Dates</th><th>Price</th><th>Status</th></tr>
@@ -129,10 +130,12 @@ export default function AdminDashboard({ token, onLogout }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
 
           <section style={{ marginTop: 16 }}>
             <h3>Rooms</h3>
+            <div className="table-wrap">
             <table>
               <thead>
                 <tr><th>#</th><th>Type</th><th>Price</th><th>Status</th><th>Actions</th></tr>
@@ -157,6 +160,7 @@ export default function AdminDashboard({ token, onLogout }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
 
           <section style={{ marginTop: 16 }}>
@@ -168,6 +172,7 @@ export default function AdminDashboard({ token, onLogout }) {
               <input type="number" step="0.01" placeholder="Price" value={foodForm.price} onChange={(e) => setFoodForm(s => ({ ...s, price: e.target.value }))} required />
               <button type="submit">Add Item</button>
             </form>
+            <div className="table-wrap">
             <table>
               <thead>
                 <tr><th>Name</th><th>Category</th><th>Price</th><th>Available</th></tr>
@@ -190,6 +195,7 @@ export default function AdminDashboard({ token, onLogout }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
 
           <section style={{ marginTop: 16 }}>
@@ -201,6 +207,7 @@ export default function AdminDashboard({ token, onLogout }) {
               <input type="number" step="0.01" placeholder="Price (0 = free)" value={serviceForm.price} onChange={(e) => setServiceForm(s => ({ ...s, price: e.target.value }))} />
               <button type="submit">Add Service</button>
             </form>
+            <div className="table-wrap">
             <table>
               <thead>
                 <tr><th>Name</th><th>Category</th><th>Price</th><th>Available</th></tr>
@@ -223,6 +230,7 @@ export default function AdminDashboard({ token, onLogout }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         </div>
       )}
